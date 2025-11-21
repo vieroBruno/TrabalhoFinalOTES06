@@ -113,7 +113,7 @@ Para testar o aplicativo, basta importar o projeto deste repositório, iniciar o
     <p>
      Neste trabalho aprendemos muito sobre a criação e o consumo de rotas de API, bem como sobre a utilização do Android Studio no desenvolvimento de aplicativos para dispositivos móveis.
       Nossa maior dificuldade foi nos adaptar à ferramenta, que por exigir muito processamento acabou apresentando travamentos. 
-      No entanto, ao longo do desenvolvimento fomos nos familiarizando cada vez mais com a plataforma. Também buscamos adicionar funcionalidades variadas, como o uso de toasts, do AndroidManifest e de threads,
+      No entanto, ao longo do desenvolvimento fomos nos familiarizando cada vez mais com a plataforma. Também buscamos adicionar funcionalidades variadas, como o uso de toasts, permissões via AndroidManifest e de threads,
       para explorar e testar melhor os recursos do Android Studio.
     </p>
     <p> Qualquer dúvida que houver referente ao Projeto, por favor enviar para jpjpsell@gmail.com</p>
