@@ -39,7 +39,7 @@
    <h3>🔹 1. Detecção automática de localização</h3>
     <p>
         Ao abrir o app pela primeira vez, o usuário é solicitado a conceder permissão de GPS.
-        Após a permissão, o app obtém latitude e longitude automaticamente e realiza a requisição 
+        Após a permissão, o app obtém latitude e longitude automaticamente da sua última localização e realiza a requisição 
         para a rota correspondente, exibindo o clima da região atual.
     </p>
 
