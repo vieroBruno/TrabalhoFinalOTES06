@@ -13,6 +13,11 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.trabalhofinalmoveis.R;
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationServices;
+import android.content.pm.PackageManager;
+import androidx.core.app.ActivityCompat;
+import android.Manifest;
 
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -45,6 +50,7 @@ public class MainActivity extends AppCompatActivity {
     private TextView pressureText;
     private TextView windText;
 
+    private FusedLocationProviderClient fusedLocationClient;
     private final OkHttpClient client = new OkHttpClient();
 
     @Override
@@ -73,7 +79,158 @@ public class MainActivity extends AppCompatActivity {
                 fetchWeather(city);
             }
         });
+
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+        requestLocationPermission();
     }
+
+    private void requestLocationPermission() {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+
+            ActivityCompat.requestPermissions(
+                    this,
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                    1001
+            );
+        } else {
+            getCurrentLocation();
+        }
+    }
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        if (requestCode == 1001) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+
+                getCurrentLocation();
+            } else {
+
+                Toast.makeText(this, "Permissão de localização negada", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+    private void getCurrentLocation() {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+            return;
+        }
+
+        fusedLocationClient.getLastLocation()
+                .addOnSuccessListener(location -> {
+                    if (location != null) {
+                        double lat = location.getLatitude();
+                        double lon = location.getLongitude();
+
+                        fetchWeatherByCoordinates(lat, lon);
+                    }
+                });
+    }
+
+    private void fetchWeatherByCoordinates(double lat, double lon) {
+
+
+
+        OkHttpClient client = new OkHttpClient();
+        String url = String.format(Locale.US,
+                "http://10.0.2.2:8081/api/weather/coordinates?lat=%.6f&lon=%.6f",
+                lat, lon);
+
+        Request request = new Request.Builder()
+                .url(url)
+                .build();
+
+        client.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                runOnUiThread(() -> {
+                    Toast.makeText(MainActivity.this, "Erro ao conectar GPS!", Toast.LENGTH_SHORT).show();
+                });
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                if (!response.isSuccessful()) {
+                    runOnUiThread(() -> {
+                        Toast.makeText(MainActivity.this, "Localização não encontrada!", Toast.LENGTH_SHORT).show();
+                    });
+                    return;
+                }
+
+                String json = response.body().string();
+                try {
+                    JSONObject obj = new JSONObject(json);
+
+                    double temp = obj.getJSONObject("main").getDouble("temp");
+                    String tempResult = String.valueOf((Math.round(temp)))+"º";
+
+                    String desc = obj.getJSONArray("weather")
+                            .getJSONObject(0)
+                            .getString("description");
+
+                    String cityName = obj.getString("name");
+
+                    double minTemperature = obj.getJSONObject("main").getDouble("temp_min");
+                    String minTempResult ="Mín.: "+ (int) Math.floor(minTemperature)+"º";
+
+                    double maxTemperature = obj.getJSONObject("main").getDouble("temp_max");
+                    String maxTempResult = "Máx.: "+(int) Math.ceil(maxTemperature)+"º";
+
+                    double feelsLikeTemp = obj.getJSONObject("main").getDouble("feels_like");
+                    String feelsLikeResult = String.valueOf((Math.round(feelsLikeTemp)))+"º";
+
+                    int visibility = obj.getInt("visibility")/1000;
+                    String visibilityResult = visibility+" Km";
+
+                    int humidity = obj.getJSONObject("main").getInt("humidity");
+                    String humidityResult = humidity+"%";
+
+                    long sunrise = obj.getJSONObject("sys").getLong("sunrise");
+                    long sunset = obj.getJSONObject("sys").getLong("sunset");
+                    long timezoneOffset = obj.getLong("timezone");
+                    Date sunriseDate = new Date((sunrise + timezoneOffset) * 1000L);
+                    Date sunsetDate = new Date((sunset + timezoneOffset) * 1000L);
+                    SimpleDateFormat sdf = new SimpleDateFormat("HH:mm", Locale.getDefault());
+                    sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+                    String sunriseFormatted = sdf.format(sunriseDate);
+                    String sunsetFormatted = sdf.format(sunsetDate);
+
+                    double pressureHpa = obj.getJSONObject("main").getDouble("pressure");
+                    double pressureBar = pressureHpa / 1000.0;
+                    String pressureFormatted = String.format(Locale.getDefault(), "%.3f Bar", pressureBar);
+
+                    double windSpeed = obj.getJSONObject("wind").getDouble("speed");
+                    double windDeg = obj.getJSONObject("wind").getDouble("deg");
+                    String direction = getWindDirection(windDeg);
+                    double windKmh = windSpeed * 3.6;
+                    String windFormatted = String.format(Locale.getDefault(),
+                            "%.1f %s", windKmh, direction);
+
+                    runOnUiThread(() -> {
+                        maxTemp.setText(maxTempResult);
+                        minTemp.setText(minTempResult);
+                        temperature.setText(tempResult);
+                        weatherDescription.setText(desc);
+                        resultView.setText(cityName);
+                        feelsLike.setText(feelsLikeResult);
+                        visibilityText.setText(visibilityResult);
+                        humidityText.setText(humidityResult);
+                        sunriseText.setText(sunriseFormatted);
+                        sunsetText.setText(sunsetFormatted);
+                        pressureText.setText(pressureFormatted);
+                        windText.setText(windFormatted);
+                    });
+
+
+
+                } catch (Exception e) {
+                    runOnUiThread(() -> resultView.setText("Erro ao processar dados."));
+                }
+            }
+        });
+    }
+
     private String getWindDirection(double degree) {
 
         if (degree >= 337.5 || degree < 22.5) return "N";
