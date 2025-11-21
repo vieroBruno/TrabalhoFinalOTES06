@@ -137,8 +137,6 @@ public class MainActivity extends AppCompatActivity {
                 "http://10.0.2.2:8081/api/weather/coordinates?lat=%.6f&lon=%.6f",
                 lat, lon);
 
-        android.util.Log.d("WeatherApp", "URL: " + url);
-
         Request request = new Request.Builder()
                 .url(url)
                 .build();
